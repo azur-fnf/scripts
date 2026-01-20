@@ -1,4 +1,3 @@
--- CLIENT SIDE
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -7,6 +6,7 @@ local TweenService = game:GetService("TweenService")
 
 local event = ReplicatedStorage:WaitForChild("AdminRemotes"):WaitForChild("CommandEvent")
 
+-- CONFIGURAÇÕES DE CORES (PALETA DARK NEON)
 local THEME = {
 	Background = Color3.fromRGB(13, 13, 15),
 	Secondary = Color3.fromRGB(20, 20, 25),
@@ -17,9 +17,8 @@ local THEME = {
 }
 
 local spawnDistance = 10
-local isVisible = true
 
--- GUI Base
+-- GUI BASE
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.Name = "AdminHub_Premium_V2"
 gui.ResetOnSpawn = false
@@ -33,14 +32,14 @@ main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = THEME.Background
 main.BorderSizePixel = 0
 main.ClipsDescendants = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 local stroke = Instance.new("UIStroke", main)
 stroke.Color = THEME.Accent
 stroke.Thickness = 1.8
 stroke.Transparency = 0.6
 
--- TopBar Drag
+-- TOP BAR (ÁREA DE ARRASTAR)
 local top = Instance.new("Frame", main)
 top.Name = "TopBar"
 top.Size = UDim2.new(1, 0, 0, 55)
@@ -58,7 +57,7 @@ title.BackgroundTransparency = 1
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.RichText = true
 
--- Drag
+-- DRAG SYSTEM (SUAVE)
 local dragging, dragInput, dragStart, startPos
 local function update(input)
 	local delta = input.Position - dragStart
@@ -85,17 +84,21 @@ UIS.InputChanged:Connect(function(input)
 	if input == dragInput and dragging then update(input) end
 end)
 
--- Toggle com LeftControl
+-- TOGGLE / MINIMIZE (LEFT CONTROL)
+local isVisible = true
 UIS.InputBegan:Connect(function(input, gpe)
 	if not gpe and input.KeyCode == Enum.KeyCode.LeftControl then
 		isVisible = not isVisible
 		local targetSize = isVisible and UDim2.fromOffset(450, 350) or UDim2.fromOffset(450, 55)
-		TweenService:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = targetSize}):Play()
+		
+		TweenService:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+			Size = targetSize
+		}):Play()
 		stroke.Enabled = isVisible
 	end
 end)
 
--- Login
+-- KEY FRAME (LOGIN)
 local keyFrame = Instance.new("Frame", main)
 keyFrame.Size = UDim2.new(1, 0, 1, -55)
 keyFrame.Position = UDim2.fromOffset(0, 55)
@@ -107,6 +110,7 @@ keyBox.Position = UDim2.fromScale(0.5, 0.4)
 keyBox.AnchorPoint = Vector2.new(0.5, 0.5)
 keyBox.BackgroundColor3 = THEME.Secondary
 keyBox.PlaceholderText = "Digite sua Key..."
+keyBox.Text = ""
 keyBox.TextColor3 = THEME.Text
 keyBox.Font = Enum.Font.GothamMedium
 keyBox.TextSize = 16
@@ -124,26 +128,27 @@ submit.TextSize = 14
 submit.AutoButtonColor = false
 Instance.new("UICorner", submit).CornerRadius = UDim.new(0, 8)
 
--- Hub
+-- HUB CONTENT (COMANDOS)
 local hub = Instance.new("ScrollingFrame", main)
 hub.Size = UDim2.new(1, -40, 1, -75)
 hub.Position = UDim2.fromOffset(20, 65)
 hub.BackgroundTransparency = 1
 hub.Visible = false
 hub.ScrollBarThickness = 2
-hub.CanvasSize = UDim2.new(0, 0, 0, 800)
+hub.CanvasSize = UDim2.new(0, 0, 0, 480)
 
 local targetBox = Instance.new("TextBox", hub)
 targetBox.Size = UDim2.new(1, 0, 0, 40)
 targetBox.Position = UDim2.fromOffset(0, 5)
 targetBox.BackgroundColor3 = THEME.Secondary
 targetBox.PlaceholderText = "Nome do Jogador"
+targetBox.Text = ""
 targetBox.TextColor3 = THEME.Text
 targetBox.Font = Enum.Font.Gotham
 targetBox.TextSize = 14
 Instance.new("UICorner", targetBox).CornerRadius = UDim.new(0, 6)
 
--- Distância
+-- DISTÂNCIA
 local distFrame = Instance.new("Frame", hub)
 distFrame.Size = UDim2.new(1, 0, 0, 40)
 distFrame.Position = UDim2.fromOffset(0, 50)
@@ -170,14 +175,14 @@ distInput.TextSize = 14
 Instance.new("UICorner", distInput).CornerRadius = UDim.new(0, 4)
 
 distInput:GetPropertyChangedSignal("Text"):Connect(function()
-	local val = tonumber(distInput.Text)
-	if val then
-		spawnDistance = val
-		distLabel.Text = "Distância do Spawn: " .. val
-	end
+    local val = tonumber(distInput.Text)
+    if val then
+        spawnDistance = val
+        distLabel.Text = "Distância do Spawn: " .. val
+    end
 end)
 
--- Botão Helper
+-- FUNÇÃO BOTÃO PREMIUM
 local function makeButton(text, y, color)
 	local b = Instance.new("TextButton", hub)
 	b.Size = UDim2.new(1, 0, 0, 45)
@@ -188,7 +193,7 @@ local function makeButton(text, y, color)
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 13
 	b.AutoButtonColor = false
-
+	
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
 	local bStroke = Instance.new("UIStroke", b)
 	bStroke.Color = color or THEME.Accent
@@ -208,26 +213,17 @@ local function makeButton(text, y, color)
 	return b
 end
 
--- Botões
 local explode = makeButton("Explodir Alvo", 100, THEME.Error)
 local gotoP = makeButton("Teleportar até Alvo", 155)
 local spawnToolBtn = makeButton("Ferramenta de Spawn", 210, Color3.fromRGB(80, 200, 255))
 local deleteToolBtn = makeButton("Ferramenta de Deletar", 265, Color3.fromRGB(200, 200, 200))
-local flyBtn = makeButton("Fly", 320, Color3.fromRGB(255, 200, 0))
-local noclipBtn = makeButton("Noclip", 375, Color3.fromRGB(255, 200, 0))
-local bringBtn = makeButton("Trazer Jogador", 430, Color3.fromRGB(120, 255, 120))
-local healBtn = makeButton("Curar", 485, Color3.fromRGB(120, 255, 120))
-local killBtn = makeButton("Matar", 540, Color3.fromRGB(255, 80, 80))
-local speedBtn = makeButton("Speed", 595, Color3.fromRGB(120, 255, 120))
-local freezeBtn = makeButton("Congelar", 650, Color3.fromRGB(255, 200, 0))
-local unfreezeBtn = makeButton("Descongelar", 705, Color3.fromRGB(120, 255, 120))
 
--- Auth
+-- EVENTOS
 submit.MouseButton1Click:Connect(function()
-	event:FireServer("auth", {key = keyBox.Text})
+	event:FireServer("auth", keyBox.Text)
 end)
 
-event.OnClientEvent:Connect(function(response, data)
+event.OnClientEvent:Connect(function(response)
 	if response == "auth_success" then
 		submit.Text = "ACESSO CONCEDIDO"
 		submit.BackgroundColor3 = THEME.Success
@@ -246,82 +242,50 @@ event.OnClientEvent:Connect(function(response, data)
 	end
 end)
 
--- Comandos
+-- COMANDOS
 explode.MouseButton1Click:Connect(function()
-	event:FireServer("explode", {target = targetBox.Text})
+	event:FireServer("explode", targetBox.Text)
 end)
 
 gotoP.MouseButton1Click:Connect(function()
-	event:FireServer("goto", {target = targetBox.Text})
+	event:FireServer("goto", targetBox.Text)
 end)
 
-flyBtn.MouseButton1Click:Connect(function()
-	event:FireServer("fly", {})
-end)
-
-noclipBtn.MouseButton1Click:Connect(function()
-	event:FireServer("noclip", {})
-end)
-
-bringBtn.MouseButton1Click:Connect(function()
-	event:FireServer("bring", {target = targetBox.Text})
-end)
-
-healBtn.MouseButton1Click:Connect(function()
-	event:FireServer("heal", {target = targetBox.Text})
-end)
-
-killBtn.MouseButton1Click:Connect(function()
-	event:FireServer("kill", {target = targetBox.Text})
-end)
-
-speedBtn.MouseButton1Click:Connect(function()
-	event:FireServer("speed", {target = targetBox.Text, speed = 50})
-end)
-
-freezeBtn.MouseButton1Click:Connect(function()
-	event:FireServer("freeze", {target = targetBox.Text})
-end)
-
-unfreezeBtn.MouseButton1Click:Connect(function()
-	event:FireServer("unfreeze", {target = targetBox.Text})
-end)
-
--- Spawn Tool
+-- FERRAMENTA DE SPAWN (USANDO REMOTEEVENT)
 spawnToolBtn.MouseButton1Click:Connect(function()
-	if player.Backpack:FindFirstChild("Spawnar Bloco") or (player.Character and player.Character:FindFirstChild("Spawnar Bloco")) then
-		return 
-	end
+    if player.Backpack:FindFirstChild("Spawnar Bloco") or (player.Character and player.Character:FindFirstChild("Spawnar Bloco")) then
+        return 
+    end
 
-	local spawnTool = Instance.new("Tool")
-	spawnTool.Name = "Spawnar Bloco"
-	spawnTool.RequiresHandle = false
-	spawnTool.Parent = player.Backpack
+    local spawnTool = Instance.new("Tool")
+    spawnTool.Name = "Spawnar Bloco"
+    spawnTool.RequiresHandle = false
+    spawnTool.Parent = player.Backpack
 
-	spawnTool.Activated:Connect(function()
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") then
-			local spawnPos = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -spawnDistance)
-			event:FireServer("spawnblock", {pos = spawnPos.Position})
-		end
-	end)
+    spawnTool.Activated:Connect(function()
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local spawnPos = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -spawnDistance)
+            event:FireServer("spawnblock", spawnPos.Position)
+        end
+    end)
 end)
 
--- Delete Tool
+-- FERRAMENTA DE DELETAR
 deleteToolBtn.MouseButton1Click:Connect(function()
-	if player.Backpack:FindFirstChild("Deletar Objeto") or (player.Character and player.Character:FindFirstChild("Deletar Objeto")) then
-		return 
-	end
+    if player.Backpack:FindFirstChild("Deletar Objeto") or (player.Character and player.Character:FindFirstChild("Deletar Objeto")) then
+        return 
+    end
 
-	local deleteTool = Instance.new("Tool")
-	deleteTool.Name = "Deletar Objeto"
-	deleteTool.RequiresHandle = false
-	deleteTool.Parent = player.Backpack
+    local deleteTool = Instance.new("Tool")
+    deleteTool.Name = "Deletar Objeto"
+    deleteTool.RequiresHandle = false
+    deleteTool.Parent = player.Backpack
 
-	deleteTool.Activated:Connect(function()
-		local target = mouse.Target
-		if target and target:IsA("BasePart") then
-			event:FireServer("deleteblock", {part = target})
-		end
-	end)
+    deleteTool.Activated:Connect(function()
+        local target = mouse.Target
+        if target and target:IsA("BasePart") then
+            event:FireServer("deleteblock", target)
+        end
+    end)
 end)

@@ -266,10 +266,11 @@ spawnToolBtn.MouseButton1Click:Connect(function()
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             local spawnPos = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -spawnDistance)
-            event:FireServer("spawnblock", spawnPos.Position)
+            event:FireServer(spawnPos.Position)
         end
     end)
 end)
+
 
 -- FERRAMENTA DE DELETAR
 deleteToolBtn.MouseButton1Click:Connect(function()

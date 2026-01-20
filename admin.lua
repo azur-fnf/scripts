@@ -1,292 +1,227 @@
+-- ADMIN HUB AUTO GUI (Refatorado & Melhorado)
 local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UIS = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local userInputService = game:GetService("UserInputService")
+local tweenService = game:GetService("TweenService")
+local runService = game:GetService("RunService")
+local event = game.ReplicatedStorage:WaitForChild("AdminEvent")
 
-local event = ReplicatedStorage:WaitForChild("AdminRemotes"):WaitForChild("CommandEvent")
-
--- CONFIGURAÇÕES DE CORES (PALETA DARK NEON)
-local THEME = {
-	Background = Color3.fromRGB(13, 13, 15),
-	Secondary = Color3.fromRGB(20, 20, 25),
-	Accent = Color3.fromRGB(0, 170, 255),
+-- ================= CONFIGURAÇÕES DE CORES =================
+local COLORS = {
+	Background = Color3.fromRGB(20, 20, 20),
+	Secondary = Color3.fromRGB(35, 35, 35),
+	Accent = Color3.fromRGB(70, 70, 70),
+	Hover = Color3.fromRGB(90, 90, 90),
 	Text = Color3.fromRGB(255, 255, 255),
-	Error = Color3.fromRGB(255, 80, 80),
-	Success = Color3.fromRGB(80, 255, 120)
+	Placeholder = Color3.fromRGB(150, 150, 150)
 }
 
-local spawnDistance = 10
-
--- GUI BASE
-local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "AdminHub_Premium_V2"
+-- ================= CRIAÇÃO DA GUI =================
+local gui = Instance.new("ScreenGui")
+gui.Name = "AdminHubPro"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = player:WaitForChild("PlayerGui")
 
-local main = Instance.new("Frame", gui)
-main.Name = "MainFrame"
-main.Size = UDim2.fromOffset(450, 350)
-main.Position = UDim2.fromScale(0.5, 0.5)
-main.AnchorPoint = Vector2.new(0.5, 0.5)
-main.BackgroundColor3 = THEME.Background
-main.BorderSizePixel = 0
-main.ClipsDescendants = true
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 260, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -130, 0.5, -200)
+mainFrame.BackgroundColor3 = COLORS.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
 
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-local stroke = Instance.new("UIStroke", main)
-stroke.Color = THEME.Accent
-stroke.Thickness = 1.8
-stroke.Transparency = 0.6
+local corner = Instance.new("UICorner", mainFrame)
+corner.CornerRadius = UDim.new(0, 10)
 
--- TOP BAR (ÁREA DE ARRASTAR)
-local top = Instance.new("Frame", main)
-top.Name = "TopBar"
-top.Size = UDim2.new(1, 0, 0, 55)
-top.BackgroundColor3 = THEME.Secondary
-top.BorderSizePixel = 0
-
-local title = Instance.new("TextLabel", top)
-title.Size = UDim2.new(1, -20, 1, 0)
-title.Position = UDim2.fromOffset(20, 0)
-title.Text = "ADMIN <font color='#00AAFF'>HUB</font> • PREMIUM"
-title.TextColor3 = THEME.Text
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
+-- Título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.RichText = true
+title.Text = "ADMIN HUB V2"
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = COLORS.Text
+title.TextSize = 16
+title.Parent = mainFrame
 
--- DRAG SYSTEM (SUAVE)
-local dragging, dragInput, dragStart, startPos
-local function update(input)
-	local delta = input.Position - dragStart
-	local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	TweenService:Create(main, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+-- SELEÇÃO DE JOGADOR (TextBox)
+local targetBox = Instance.new("TextBox")
+targetBox.Name = "TargetBox"
+targetBox.Size = UDim2.new(1, -20, 0, 35)
+targetBox.Position = UDim2.new(0, 10, 0, 40)
+targetBox.BackgroundColor3 = COLORS.Secondary
+targetBox.TextColor3 = COLORS.Text
+targetBox.PlaceholderText = "Nome do Jogador..."
+targetBox.PlaceholderColor3 = COLORS.Placeholder
+targetBox.Font = Enum.Font.Gotham
+targetBox.TextSize = 14
+targetBox.Text = ""
+targetBox.ClearTextOnFocus = false
+targetBox.Parent = mainFrame
+
+local boxCorner = Instance.new("UICorner", targetBox)
+boxCorner.CornerRadius = UDim.new(0, 6)
+
+-- Container dos Botões
+local container = Instance.new("ScrollingFrame")
+container.Size = UDim2.new(1, -20, 1, -95)
+container.Position = UDim2.new(0, 10, 0, 85)
+container.BackgroundTransparency = 1
+container.CanvasSize = UDim2.new(0, 0, 0, 0)
+container.ScrollBarThickness = 2
+container.Parent = mainFrame
+
+local layout = Instance.new("UIListLayout", container)
+layout.Padding = UDim.new(0, 8)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- ================= FUNÇÃO CRIAR BOTÃO =================
+local function createButton(text, icon)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -10, 0, 40)
+	btn.BackgroundColor3 = COLORS.Secondary
+	btn.TextColor3 = COLORS.Text
+	btn.Text = "  " .. icon .. " " .. text
+	btn.Font = Enum.Font.GothamMedium
+	btn.TextSize = 14
+	btn.AutoButtonColor = false
+	btn.TextXAlignment = Enum.TextXAlignment.Left
+	btn.Parent = container
+
+	local btnCorner = Instance.new("UICorner", btn)
+	btnCorner.CornerRadius = UDim.new(0, 6)
+
+	btn.MouseEnter:Connect(function()
+		tweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Hover}):Play()
+	end)
+	btn.MouseLeave:Connect(function()
+		tweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Secondary}):Play()
+	end)
+	
+	return btn
 end
 
-top.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+-- ================= ELEMENTOS =================
+local speedBtn   = createButton("Speed", "⚡")
+local flyBtn     = createButton("Fly [OFF]", "🕊")
+local gravBtn    = createButton("Gravity [OFF]", "🌌")
+local blockBtn   = createButton("Spawn Block Tool", "🧱")
+local deleteBtn  = createButton("Delete Tool", "🗑️")
+local killBtn    = createButton("Kill Target", "☠")
+local explodeBtn = createButton("Explode Target", "💥")
+
+layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	container.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+end)
+
+-- ================= SISTEMA DE ARRASTAR =================
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	tweenService:Create(mainFrame, TweenInfo.new(0.1), {Position = newPos}):Play()
+end
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		dragging = true
 		dragStart = input.Position
-		startPos = main.Position
+		startPos = mainFrame.Position
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then dragging = false end
 		end)
 	end
 end)
 
-top.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
 end)
 
-UIS.InputChanged:Connect(function(input)
+userInputService.InputChanged:Connect(function(input)
 	if input == dragInput and dragging then update(input) end
 end)
 
--- TOGGLE / MINIMIZE (LEFT CONTROL)
-local isVisible = true
-UIS.InputBegan:Connect(function(input, gpe)
-	if not gpe and input.KeyCode == Enum.KeyCode.LeftControl then
-		isVisible = not isVisible
-		local targetSize = isVisible and UDim2.fromOffset(450, 350) or UDim2.fromOffset(450, 55)
-		
-		TweenService:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-			Size = targetSize
-		}):Play()
-		stroke.Enabled = isVisible
+-- ================= MINIMIZAR (LEFT CONTROL) =================
+local visible = true
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+	if not gameProcessed and input.KeyCode == Enum.KeyCode.LeftControl then
+		visible = not visible
+		if visible then
+			mainFrame.Visible = true
+			mainFrame:TweenSize(UDim2.new(0, 260, 0, 400), "Out", "Back", 0.3, true)
+		else
+			mainFrame:TweenSize(UDim2.new(0, 260, 0, 0), "In", "Quad", 0.2, true, function()
+				if not visible then mainFrame.Visible = false end
+			end)
+		end
 	end
 end)
 
--- KEY FRAME (LOGIN)
-local keyFrame = Instance.new("Frame", main)
-keyFrame.Size = UDim2.new(1, 0, 1, -55)
-keyFrame.Position = UDim2.fromOffset(0, 55)
-keyFrame.BackgroundTransparency = 1
-
-local keyBox = Instance.new("TextBox", keyFrame)
-keyBox.Size = UDim2.fromOffset(300, 45)
-keyBox.Position = UDim2.fromScale(0.5, 0.4)
-keyBox.AnchorPoint = Vector2.new(0.5, 0.5)
-keyBox.BackgroundColor3 = THEME.Secondary
-keyBox.PlaceholderText = "Digite sua Key..."
-keyBox.Text = ""
-keyBox.TextColor3 = THEME.Text
-keyBox.Font = Enum.Font.GothamMedium
-keyBox.TextSize = 16
-Instance.new("UICorner", keyBox).CornerRadius = UDim.new(0, 8)
-
-local submit = Instance.new("TextButton", keyFrame)
-submit.Size = UDim2.fromOffset(300, 42)
-submit.Position = UDim2.fromScale(0.5, 0.58)
-submit.AnchorPoint = Vector2.new(0.5, 0.5)
-submit.BackgroundColor3 = THEME.Accent
-submit.Text = "ENTRAR NO SISTEMA"
-submit.TextColor3 = THEME.Background
-submit.Font = Enum.Font.GothamBold
-submit.TextSize = 14
-submit.AutoButtonColor = false
-Instance.new("UICorner", submit).CornerRadius = UDim.new(0, 8)
-
--- HUB CONTENT (COMANDOS)
-local hub = Instance.new("ScrollingFrame", main)
-hub.Size = UDim2.new(1, -40, 1, -75)
-hub.Position = UDim2.fromOffset(20, 65)
-hub.BackgroundTransparency = 1
-hub.Visible = false
-hub.ScrollBarThickness = 2
-hub.CanvasSize = UDim2.new(0, 0, 0, 480)
-
-local targetBox = Instance.new("TextBox", hub)
-targetBox.Size = UDim2.new(1, 0, 0, 40)
-targetBox.Position = UDim2.fromOffset(0, 5)
-targetBox.BackgroundColor3 = THEME.Secondary
-targetBox.PlaceholderText = "Nome do Jogador"
-targetBox.Text = ""
-targetBox.TextColor3 = THEME.Text
-targetBox.Font = Enum.Font.Gotham
-targetBox.TextSize = 14
-Instance.new("UICorner", targetBox).CornerRadius = UDim.new(0, 6)
-
--- DISTÂNCIA
-local distFrame = Instance.new("Frame", hub)
-distFrame.Size = UDim2.new(1, 0, 0, 40)
-distFrame.Position = UDim2.fromOffset(0, 50)
-distFrame.BackgroundTransparency = 1
-
-local distLabel = Instance.new("TextLabel", distFrame)
-distLabel.Size = UDim2.new(0.6, 0, 1, 0)
-distLabel.BackgroundTransparency = 1
-distLabel.Text = "Distância do Spawn: 10"
-distLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-distLabel.Font = Enum.Font.GothamMedium
-distLabel.TextSize = 13
-distLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local distInput = Instance.new("TextBox", distFrame)
-distInput.Size = UDim2.new(0.35, 0, 0.8, 0)
-distInput.Position = UDim2.fromScale(1, 0.5)
-distInput.AnchorPoint = Vector2.new(1, 0.5)
-distInput.BackgroundColor3 = THEME.Secondary
-distInput.Text = "10"
-distInput.TextColor3 = THEME.Accent
-distInput.Font = Enum.Font.GothamBold
-distInput.TextSize = 14
-Instance.new("UICorner", distInput).CornerRadius = UDim.new(0, 4)
-
-distInput:GetPropertyChangedSignal("Text"):Connect(function()
-    local val = tonumber(distInput.Text)
-    if val then
-        spawnDistance = val
-        distLabel.Text = "Distância do Spawn: " .. val
-    end
-end)
-
--- FUNÇÃO BOTÃO PREMIUM
-local function makeButton(text, y, color)
-	local b = Instance.new("TextButton", hub)
-	b.Size = UDim2.new(1, 0, 0, 45)
-	b.Position = UDim2.fromOffset(0, y)
-	b.BackgroundColor3 = THEME.Secondary
-	b.Text = text:upper()
-	b.TextColor3 = THEME.Text
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 13
-	b.AutoButtonColor = false
-	
-	Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-	local bStroke = Instance.new("UIStroke", b)
-	bStroke.Color = color or THEME.Accent
-	bStroke.Thickness = 1
-	bStroke.Transparency = 0.7
-	bStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-	b.MouseEnter:Connect(function()
-		TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 45)}):Play()
-		TweenService:Create(bStroke, TweenInfo.new(0.2), {Transparency = 0}):Play()
-	end)
-	b.MouseLeave:Connect(function()
-		TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = THEME.Secondary}):Play()
-		TweenService:Create(bStroke, TweenInfo.new(0.2), {Transparency = 0.7}):Play()
-	end)
-
-	return b
+-- ================= AUXILIARES =================
+local function getTarget()
+	local text = targetBox.Text:lower()
+	if text == "" then return nil end
+	for _, v in pairs(game.Players:GetPlayers()) do
+		if v.Name:lower():sub(1, #text) == text then
+			return v
+		end
+	end
+	return nil
 end
 
-local explode = makeButton("Explodir Alvo", 100, THEME.Error)
-local gotoP = makeButton("Teleportar até Alvo", 155)
-local spawnToolBtn = makeButton("Ferramenta de Spawn", 210, Color3.fromRGB(80, 200, 255))
-local deleteToolBtn = makeButton("Ferramenta de Deletar", 265, Color3.fromRGB(200, 200, 200))
+-- ================= FUNCIONALIDADES =================
+local fly = false
+local gravity = false
 
--- EVENTOS
-submit.MouseButton1Click:Connect(function()
-	event:FireServer("auth", keyBox.Text)
+speedBtn.MouseButton1Click:Connect(function()
+	event:FireServer("Speed", 100)
 end)
 
-event.OnClientEvent:Connect(function(response)
-	if response == "auth_success" then
-		submit.Text = "ACESSO CONCEDIDO"
-		submit.BackgroundColor3 = THEME.Success
-		task.wait(0.6)
-		keyFrame.Visible = false
-		hub.Visible = true
-	elseif response == "auth_fail" then
-		keyBox.Text = ""
-		keyBox.PlaceholderText = "KEY INVÁLIDA"
-		local originalPos = keyBox.Position
-		for i = 1, 6 do
-			keyBox.Position = originalPos + UDim2.fromOffset(math.random(-5,5), 0)
-			task.wait(0.05)
+flyBtn.MouseButton1Click:Connect(function()
+	fly = not fly
+	event:FireServer("Fly", fly)
+	flyBtn.Text = fly and "  🕊 Fly [ON]" or "  🕊 Fly [OFF]"
+end)
+
+gravBtn.MouseButton1Click:Connect(function()
+	gravity = not gravity
+	event:FireServer("Gravity", gravity)
+	gravBtn.Text = gravity and "  🌌 Gravity [ON]" or "  🌌 Gravity [OFF]"
+end)
+
+blockBtn.MouseButton1Click:Connect(function()
+	local tool = Instance.new("Tool")
+	tool.Name = "SpawnBlockTool"
+	tool.RequiresHandle = false
+	tool.Activated:Connect(function()
+		event:FireServer("Block", 12)
+	end)
+	tool.Parent = player.Backpack
+end)
+
+deleteBtn.MouseButton1Click:Connect(function()
+	local tool = Instance.new("Tool")
+	tool.Name = "DeleteTool"
+	tool.RequiresHandle = false
+	tool.Activated:Connect(function()
+		local mouse = player:GetMouse()
+		local target = mouse.Target
+		if target then
+			-- Envia o comando para o servidor deletar o objeto alvo
+			event:FireServer("DeletePart", target)
 		end
-		keyBox.Position = originalPos
-	end
+	end)
+	tool.Parent = player.Backpack
 end)
 
--- COMANDOS
-explode.MouseButton1Click:Connect(function()
-	event:FireServer("explode", targetBox.Text)
+killBtn.MouseButton1Click:Connect(function()
+	local target = getTarget()
+	if target then event:FireServer("Kill", target.Name) end
 end)
 
-gotoP.MouseButton1Click:Connect(function()
-	event:FireServer("goto", targetBox.Text)
-end)
-
--- FERRAMENTA DE SPAWN (USANDO REMOTEEVENT)
-spawnToolBtn.MouseButton1Click:Connect(function()
-    if player.Backpack:FindFirstChild("Spawnar Bloco") or (player.Character and player.Character:FindFirstChild("Spawnar Bloco")) then
-        return 
-    end
-
-    local spawnTool = Instance.new("Tool")
-    spawnTool.Name = "Spawnar Bloco"
-    spawnTool.RequiresHandle = false
-    spawnTool.Parent = player.Backpack
-
-    spawnTool.Activated:Connect(function()
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local spawnPos = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -spawnDistance)
-            event:FireServer(spawnPos.Position)
-        end
-    end)
-end)
-
-
--- FERRAMENTA DE DELETAR
-deleteToolBtn.MouseButton1Click:Connect(function()
-    if player.Backpack:FindFirstChild("Deletar Objeto") or (player.Character and player.Character:FindFirstChild("Deletar Objeto")) then
-        return 
-    end
-
-    local deleteTool = Instance.new("Tool")
-    deleteTool.Name = "Deletar Objeto"
-    deleteTool.RequiresHandle = false
-    deleteTool.Parent = player.Backpack
-
-    deleteTool.Activated:Connect(function()
-        local target = mouse.Target
-        if target and target:IsA("BasePart") then
-            event:FireServer("deleteblock", target)
-        end
-    end)
+explodeBtn.MouseButton1Click:Connect(function()
+	local target = getTarget()
+	if target then event:FireServer("Explode", target.Name) end
 end)
